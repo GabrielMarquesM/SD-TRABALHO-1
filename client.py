@@ -1,21 +1,39 @@
 import json
 import socket
 
-validInput = False
 
-while (validInput == False):
-    validInput = True
-    user_input = input(
-        "Insert an expression in the following format (Number OPERATOR Number): ")
-    try:
-        data_args = user_input.split()
-        # Falta checar se o operador é valido
-        op = data_args[1]
-        n_1 = int(data_args[0])
-        n_2 = int(data_args[2])
-    except:
-        validInput = False
-        print("Wrong Expression Format")
+def get_expression_input():
+    operators = ["+", "-", "*", "/"]
+    valid_input = False
+
+    while (not valid_input):
+        valid_input = True
+        user_input = input(
+            "Insert an expression in the following format (Number OPERATOR Number): ")
+        try:
+            data_args = user_input.split()
+            # Falta checar se o operador é valido
+            op = data_args[1]
+            n_1 = int(data_args[0])
+            n_2 = int(data_args[2])
+
+            if len(data_args) != 3:
+                valid_input = False
+                print("Input Error: Wrong number of arguments passed")
+                print(
+                    f"Expression expected 3 arguments but received {len(data_args)} instead\n")
+            if op not in operators:
+                valid_input = False
+                print("Input Error: Invalid operator")
+                print(f"Valid Operators: {operators}\n")
+
+        except:
+            valid_input = False
+            print("Input Error: Wrong Expression Format")
+    return op, n_1, n_2
+
+
+op, n_1, n_2 = get_expression_input()
 
 data = {
     "op": op,

@@ -1,11 +1,10 @@
 import string
 from math import nan
-from uuid import uuid4
 
 
 class Expression:
-    def __init__(self, op, n_1, n_2):
-        self.__id: int = uuid4().int
+    def __init__(self, id, op, n_1, n_2):
+        self.__id: int = id
         self.__op: string = op
         self.__n_1: float = n_1
         self.__n_2: float = n_2
@@ -24,5 +23,5 @@ class Expression:
         return self.__id
 
     def to_string(self):
-        result = f"Expression Result: {self.__n_1} {self.__op} {self.__n_2} = {self.solve_expression()}\n"
+        result = f"Expression Result: {self.__n_1} {self.__op} {self.__n_2} = {self.solve_expression()}"
         return result

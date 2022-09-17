@@ -63,6 +63,7 @@ def initialize(host, port):
         print(solution_deserialized["result"])
 
 
+
 HOST = "localhost"
 PORT = 6789
 initialize(HOST, PORT)

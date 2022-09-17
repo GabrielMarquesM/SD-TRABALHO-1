@@ -7,6 +7,7 @@ PORT = 6789
 # socket.AF_INET suporta endereços http, ipv4
 # socket.SOCK_STREAM é TCP 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.listen()
 
 s.bind((HOST, PORT))
 
@@ -17,25 +18,25 @@ nicknames = [] # como esse cliente vai ser identificado (nome)
 
 def initialize():
     # Faz mais sentido eu receber o Host e Port no initialize?
-    # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # s.settimeout(20.0)
 
     while True:
-        client, address = s.accept()
-        # Mandar uma mensagem ao cliente perguntando o nome dele (client.send('Nickname: '))
-        client.send().encode()
-        nickname = client.recv(1024).decode()
-        # Usar um dicionário é melhor??
-        clients.append(client)
-        nickname.append(nickname)
-        messageToAll("Entrou".encode())
-        client_thread = threading.Thread(target=handleMsn, args=(client))
-        client_thread
         try:
-            print("Eita")
+            client, address = s.accept()
+            # Mandar uma mensagem ao cliente perguntando o nome dele (client.send('Nickname: '))
+            client.send().encode()
+            nickname = client.recv(1024).decode()
+            # Usar um dicionário é melhor??
+            clients.append(client)
+            nickname.append(nickname)
+            messageToAll("Entrou".encode())
+            client_thread = threading.Thread(target=handleMsn, args=(client))
+            client_thread
+        
         except:
             print("Show")
-            s.close()
+            #s.close() < -- acho que ele não deve fehcar a conecção aqui
 
 # Aqui seria a mensagem para o grupo todo
 def messageToAll():

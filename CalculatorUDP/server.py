@@ -4,11 +4,8 @@ import socket
 from expression import Expression
 
 
-def initialize(host, port):
+def initialize():
     i = 0
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind((HOST, PORT))
-
     while True:
         i += 1
         print(f"Waiting for expression... \n")
@@ -31,11 +28,13 @@ def initialize(host, port):
             s.sendto(bytes(message, 'utf-8'), (host, port))
             print("Result sent succesfully")
         except:
-            print(f"Timeout - Expression No {i}")
+            break
         print()
 
 
 HOST = ''
 PORT = 6789
-
-initialize(HOST, PORT)
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.bind((HOST, PORT))
+initialize()
+s.close()

@@ -30,40 +30,45 @@ def get_exp_input():
             valid_input = True
         except:
             valid_input = False
+            if (user_input == "q"):
+                return [], True
             print("Input Error: Wrong Expression Format")
 
-    return op, n_1, n_2
+    return [op, n_1, n_2], False
 
 
-def initialize(host, port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.settimeout(20.0)  # tempo que o cliente espera uma resposta do servidor
-
+def initialize():
     while True:
-        op, n_1, n_2 = get_exp_input()
+        exp, leave = get_exp_input()
+        if leave:
+            break
         data = {
             "id": uuid4().int,
-            "op": op,
-            "n_1": n_1,
-            "n_2": n_2
+            "op": exp[0],
+            "n_1": exp[1],
+            "n_2": exp[2]
         }
 
         message = json.dumps(data)
 
         try:
-            s.sendto(bytes(message, 'utf-8'), (host, port))
+            s.sendto(bytes(message, 'utf-8'), (HOST, PORT))
             data, address = s.recvfrom(1024)
             print("Waiting for the expression's result...")
             exp_solution = data.decode("utf-8")
 
         except:
             print("Time for response for the expression exceeded")
+            break
 
         solution_deserialized = json.loads(exp_solution)
         print(solution_deserialized["result"])
 
 
-
 HOST = "localhost"
 PORT = 6789
-initialize(HOST, PORT)
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.settimeout(20.0)  # tempo que o cliente espera uma resposta do servidor
+initialize()
+s.close()
+print("Closing application...")

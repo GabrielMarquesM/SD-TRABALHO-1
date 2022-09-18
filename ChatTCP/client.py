@@ -1,5 +1,19 @@
+import json
+import os
 import socket
 import threading
+from enum import Enum
+
+
+class Command(str, Enum):
+    JOIN = "/ENTRAR"
+    USERS = "/USUARIOS"
+    DISCONNECT = "/SAIR"
+    QUIT = "q"
+
+
+def clear_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def join():
@@ -11,14 +25,25 @@ def join():
         print("Conexão mal-sucedida, tente novamente.")
         return
     # Servidor pede nickname
-    nickname_request = s.recv(1024).decode()
-    response = input(nickname_request)
-    s.sendall(response.encode('utf-8'))
+    server_request = s.recv(1024).decode()
+    server_message = json.loads(server_request)["content"]
+    nickname = input(server_message)
 
-    print("\n\n===================================")
+    data = {"content": nickname, "user": nickname}
+    data_serialized = json.dumps(data)
+
+    s.sendall(data_serialized.encode('utf-8'))
+
+    clear_console()
+    print("===================================")
+    print("Comandos Disponíveis: ")
+    print("/USUARIOS: Lista os usuários conectados")
+    print("/SAIR: Desconectar-se do chat")
+    print("===================================")
+
     receive_thread = threading.Thread(target=receiveMessages)
     receive_thread.start()
-    send_thread = threading.Thread(target=sendMessages)
+    send_thread = threading.Thread(target=sendMessages, args=[nickname])
     send_thread.start()
     while True:
         if not (receive_thread.is_alive() and send_thread.is_alive()):
@@ -28,24 +53,31 @@ def join():
 def receiveMessages():
     while True:
         try:
-            server_response = s.recv(1024).decode()
-            print(server_response)
+            message = json.loads(s.recv(1024).decode())
+
+            if message["user"] == "SERVER":
+                print(message['content'])
+            else:
+                print(
+                    f"{message['time']} - {message['user']}: {message['content']}")
         except ConnectionError:
             break
 
 
-def sendMessages():
+def sendMessages(nickname):
     while True:
-        message = input("")
-        if message == "/SAIR":
-            disconnect()
+        message = input()
+        print("\033[1A" + "\033[K", end="")
+        print(f"> {message}")
+        data = {"content": message,  "user": nickname}
+        data_serialized = json.dumps(data)
+
+        if message == Command.DISCONNECT:
+            clear_console()
+            s.close()
             break
 
-        s.sendall(message.encode('utf-8'))
-
-
-def disconnect():
-    s.close()
+        s.sendall(data_serialized.encode('utf-8'))
 
 
 HOST = "localhost"
@@ -53,12 +85,11 @@ PORT = 6789
 
 while True:
     print("Digite /ENTRAR para conectar-se")
-
     message_ = input()
-    if message_ == "/ENTRAR":
+    if message_ == Command.JOIN:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         join()
-    elif message_ == "q":
+    elif message_ == Command.QUIT:
         break
     else:
         print("Comando inválido: ", message_)

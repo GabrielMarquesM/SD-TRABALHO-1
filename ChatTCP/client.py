@@ -60,7 +60,7 @@ def receiveMessages():
             else:
                 print(
                     f"{message['time']} - {message['user']}: {message['content']}")
-        except ConnectionError:
+        except:
             break
 
 

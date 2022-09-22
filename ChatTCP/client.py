@@ -75,10 +75,11 @@ def sendMessages(nickname: str):
         data_serialized = json.dumps(data)
 
         if message == Command.DISCONNECT:
+            s.sendall(data_serialized.encode('utf-8'))
             clear_console()
             s.close()
             break
-
+        
         s.sendall(data_serialized.encode('utf-8'))
 
 

@@ -9,6 +9,7 @@ from message import Message
 
 class UserCommand(str, Enum):
     USERS = "/USUARIOS"
+    SAIR = "/SAIR"
 
 
 def initialize():
@@ -51,8 +52,6 @@ def getUsers():
 
 
 def handleMsg(client: socket):
-    #id = clients.index(client)
-    #client = clients[nickname]
     while True:
         try:
             message_serialized = json.loads(client.recv(1024).decode('utf-8'))
@@ -60,11 +59,14 @@ def handleMsg(client: socket):
             if message.content == UserCommand.USERS:
                 userList = getUsers()
                 client.send(userList.encode('utf-8'))
+            elif message.content == UserCommand.SAIR:
+                disconnectClient(client)
             else:
                 messageToAll(message, client)
         except:
-            disconnectClient(client)
+            #disconnectClient(client)
             break
+    
 
 # Problema:
 # Caso um cliente mais antigo desconecte antes de um mais novo

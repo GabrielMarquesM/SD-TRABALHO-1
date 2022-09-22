@@ -16,19 +16,19 @@ def initialize():
         try:
             client, address = s.accept()
             msg = Message("Nickname: ", server_name).toJSON()
-            client.send(msg.encode())
-            serialized_response = json.loads(client.recv(1024).decode())
+            client.send(msg.encode('utf-8'))
+            serialized_response = json.loads(client.recv(1024).decode('utf-8'))
             response = Message(**serialized_response)
             nickname = response.content
 
-            clients[nickname] = client
+            clients[client] = nickname
 
             joinedMsg = f"--- {nickname} entrou ---"
 
             print(joinedMsg)
             messageToAll(Message(joinedMsg, server_name), client)
 
-            client_thread = threading.Thread(target=handleMsg, args=[nickname])
+            client_thread = threading.Thread(target=handleMsg, args=[client])
             client_thread.start()
         except:
             print("Failed to initialize")
@@ -38,21 +38,21 @@ def initialize():
 
 def messageToAll(message: Message, sender: socket):
     response = message.toJSON()
-    for client in clients.values():
+    for client in clients.keys():
         if client != sender:
-            client.send(response.encode("utf-8"))
+            client.send(response.encode('utf-8'))
 
 
 def getUsers():
     user_list = f"| LISTA DE USUARIOS - {len(clients)} ONLINE"
-    for nickname in clients.keys():
+    for nickname in clients.values():
         user_list += "\n| * " + nickname
     return Message(user_list, server_name).toJSON()
 
 
-def handleMsg(nickname):
+def handleMsg(client: socket):
     #id = clients.index(client)
-    client = clients[nickname]
+    #client = clients[nickname]
     while True:
         try:
             message_serialized = json.loads(client.recv(1024).decode('utf-8'))
@@ -63,7 +63,7 @@ def handleMsg(nickname):
             else:
                 messageToAll(message, client)
         except:
-            disconnectClient(nickname)
+            disconnectClient(client)
             break
 
 # Problema:
@@ -74,12 +74,13 @@ def handleMsg(nickname):
 #     response = f" --- {nicknames[id]} saiu --- : IndexError: list index out of range"
 
 
-def disconnectClient(nickname):
-
+def disconnectClient(client: socket):
+    nickname = clients[client]
     response = f" --- {nickname} saiu --- "
     print(response)
-    messageToAll(Message(response, server_name), clients[nickname])
-    clients.pop(nickname)
+    messageToAll(Message(response, server_name), client)
+    clients.pop(client)
+    client.close()
 
 
 HOST = ""

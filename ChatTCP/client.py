@@ -2,6 +2,7 @@ import json
 import os
 import socket
 import threading
+from datetime import datetime
 from enum import Enum
 
 
@@ -25,7 +26,7 @@ def join():
         print("Conexão mal-sucedida, tente novamente.")
         return
     # Servidor pede nickname
-    server_request = s.recv(1024).decode()
+    server_request = s.recv(1024).decode('utf-8')
     server_message = json.loads(server_request)["content"]
     nickname = input(server_message)
 
@@ -53,7 +54,7 @@ def join():
 def receiveMessages():
     while True:
         try:
-            message = json.loads(s.recv(1024).decode())
+            message = json.loads(s.recv(1024).decode('utf-8'))
 
             if message["user"] == "SERVER":
                 print(message['content'])
@@ -64,11 +65,12 @@ def receiveMessages():
             break
 
 
-def sendMessages(nickname):
+def sendMessages(nickname: str):
     while True:
+        time = datetime.now().strftime("%H:%M:%S")
         message = input()
         print("\033[1A" + "\033[K", end="")
-        print(f"> {message}")
+        print(f"{time} - Voce: {message}")
         data = {"content": message,  "user": nickname}
         data_serialized = json.dumps(data)
 

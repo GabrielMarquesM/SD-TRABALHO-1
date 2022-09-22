@@ -16,13 +16,12 @@ def initialize():
         try:
             client, address = s.accept()
             msg = Message("Nickname: ", server_name).toJSON()
-            client.send(msg.encode())
-            serialized_response = json.loads(client.recv(1024).decode())
+            client.send(msg.encode('utf-8'))
+            serialized_response = json.loads(client.recv(1024).decode('utf-8'))
             response = Message(**serialized_response)
             nickname = response.content
 
-            clients.append(client)
-            nicknames.append(nickname)
+            clients[client] = nickname
 
             joinedMsg = f"--- {nickname} entrou ---"
 
@@ -37,22 +36,23 @@ def initialize():
 # Mensagem para o grupo todo
 
 
-def messageToAll(message: Message, sender):
+def messageToAll(message: Message, sender: socket):
     response = message.toJSON()
-    for client in clients:
+    for client in clients.keys():
         if client != sender:
-            client.send(response.encode("utf-8"))
+            client.send(response.encode('utf-8'))
 
 
 def getUsers():
-    user_list = f"| LISTA DE USUARIOS - {len(nicknames)} ONLINE"
-    for nickname in nicknames:
+    user_list = f"| LISTA DE USUARIOS - {len(clients)} ONLINE"
+    for nickname in clients.values():
         user_list += "\n| * " + nickname
     return Message(user_list, server_name).toJSON()
 
 
-def handleMsg(client):
-    id = clients.index(client)
+def handleMsg(client: socket):
+    #id = clients.index(client)
+    #client = clients[nickname]
     while True:
         try:
             message_serialized = json.loads(client.recv(1024).decode('utf-8'))
@@ -62,8 +62,8 @@ def handleMsg(client):
                 client.send(userList.encode('utf-8'))
             else:
                 messageToAll(message, client)
-        except ConnectionError:
-            disconnectClient(id)
+        except:
+            disconnectClient(client)
             break
 
 # Problema:
@@ -74,12 +74,13 @@ def handleMsg(client):
 #     response = f" --- {nicknames[id]} saiu --- : IndexError: list index out of range"
 
 
-def disconnectClient(id):
-    response = f" --- {nicknames[id]} saiu --- "
+def disconnectClient(client: socket):
+    nickname = clients[client]
+    response = f" --- {nickname} saiu --- "
     print(response)
-    messageToAll(Message(response, server_name), clients[id])
-    del clients[id]
-    del nicknames[id]
+    messageToAll(Message(response, server_name), client)
+    clients.pop(client)
+    client.close()
 
 
 HOST = ""
@@ -92,8 +93,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
     s.listen(1)
 
-    clients = []  # clientes que estão conectados
-    nicknames = []  # como esse cliente vai ser identificado (nome)
+    clients = {}  # clientes que estão conectados
 
     # o initialize vai estar recebendo as conexões e cada conexão vai começar uma thread
     initialize()

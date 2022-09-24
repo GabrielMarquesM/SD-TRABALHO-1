@@ -9,10 +9,11 @@ from message import Message
 
 class UserCommand(str, Enum):
     USERS = "/USUARIOS"
-    SAIR = "/SAIR"
+    DISCONNECT = "/SAIR"
 
 
 def initialize():
+    print("Server initialized.")
     while True:
         try:
             client, address = s.accept()
@@ -32,7 +33,7 @@ def initialize():
             client_thread = threading.Thread(target=handleMsg, args=[client])
             client_thread.start()
         except:
-            print("Failed to initialize")
+            print("Connection failed.")
 
 # Mensagem para o grupo todo
 
@@ -59,21 +60,13 @@ def handleMsg(client: socket):
             if message.content == UserCommand.USERS:
                 userList = getUsers()
                 client.send(userList.encode('utf-8'))
-            elif message.content == UserCommand.SAIR:
+            elif message.content == UserCommand.DISCONNECT:
                 disconnectClient(client)
             else:
                 messageToAll(message, client)
         except:
-            #disconnectClient(client)
+            # disconnectClient(client)
             break
-    
-
-# Problema:
-# Caso um cliente mais antigo desconecte antes de um mais novo
-# Uma exceção é lançada out of range é lançada em relação ao ID
-# Ex: cliente 1 desconecta, cliente 0 desconecta, OK
-# Ex: cliente 0 desconecta, cliente 1 desconecta:
-#     response = f" --- {nicknames[id]} saiu --- : IndexError: list index out of range"
 
 
 def disconnectClient(client: socket):

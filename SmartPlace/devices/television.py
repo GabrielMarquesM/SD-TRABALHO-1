@@ -1,4 +1,12 @@
-from device import Device
+from devices.device import Device
+
 
 class Television(Device):
-    pass
+    def get_info(self):
+        pass
+
+    def list_actions(self):
+        pass
+
+    def perform_action(self, command: str):
+        pass

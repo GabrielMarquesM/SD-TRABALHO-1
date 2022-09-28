@@ -1,13 +1,17 @@
+import json
 import socket
 import struct
-import time
+import threading
 from abc import ABC, abstractmethod
 from enum import Enum
 from uuid import uuid4
 
+ADDRESS_MULTICAST = ('225.0.0.250', 5007)
+ADDRESS_TCP = ('localhost', 4321)
+
 
 class Requests(str, Enum):
-    IDENTIFY = "Identifique-se device"
+    IDENTIFY = "Identifique-se"
     CMD = "Comando"
 
 
@@ -20,10 +24,15 @@ class DeviceType(str, Enum):
 
 class Device(ABC):
     def __init__(self, type) -> None:
-        self.id = uuid4()
+        self.id = str(uuid4())
         self.type: DeviceType = type
-        self.sock = socket.socket(
+        self.listen = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.sender = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        identification_sender = threading.Thread(
+            target=self.connect)
+        identification_sender.start()
 
     @abstractmethod
     def get_info(self):
@@ -37,23 +46,30 @@ class Device(ABC):
     def perform_action(self, command: str):
         pass
 
-    def connect(self, host_port):
-        self.sock.setsockopt(
+    def connect(self):
+        # Listen
+        self.listen.setsockopt(
             socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        self.sock.bind(('', host_port[1]))
-
+        self.listen.bind(ADDRESS_MULTICAST)
         mreq = struct.pack('4sl', socket.inet_aton(
-            host_port[0]), socket.INADDR_ANY)
-        self.sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+            ADDRESS_MULTICAST[0]), socket.INADDR_ANY)
+        self.listen.setsockopt(
+            socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+        # Sender
+        info_msg = {"id": self.id, "req_type": Requests.IDENTIFY,  "type": self.type,
+                    "address": ADDRESS_TCP[0], "port": ADDRESS_TCP[1]}
+        serialized_info = json.dumps(info_msg)
+
+        self.sender.connect((ADDRESS_TCP[0], ADDRESS_TCP[1]))
+
         while True:
             try:
-                request = self.sock.recv(10240).decode('utf-8')
-                print(request)
+                request = self.listen.recv(10240).decode('utf-8')
                 if request == Requests.IDENTIFY:
-                    msg_ = f"Oi, sou o {self.type}"
-                    self.sock.sendto(msg_.encode("utf-8"), host_port)
-                    print("Mandei mensagem")
+                    print("Enviando identificação ao gateway")
+                    self.sender.sendall(serialized_info.encode("utf-8"))
+                    # print("Mandei mensagem")
             except:
                 print("Fui incapaz de mandar mensagem")
                 break

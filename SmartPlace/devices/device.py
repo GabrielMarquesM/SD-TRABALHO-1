@@ -62,30 +62,32 @@ class Device(ABC):
                     "address": ADDRESS_TCP[0], "port": ADDRESS_TCP[1]}
         serialized_info = json.dumps(info_msg)
 
-        self.sender.connect((ADDRESS_TCP[0], ADDRESS_TCP[1]))
+        self.sender.connect(ADDRESS_TCP)
 
         while True:
-            # try:
-            request = json.loads(self.listen.recv(10240).decode('utf-8'))
+            try:
+                request = json.loads(self.listen.recv(10240).decode('utf-8'))
 
-            if request["type"] == Requests.IDENTIFY:
-                #print("Enviando identificação ao gateway")
-                self.sender.sendall(serialized_info.encode("utf-8"))
-                # print("Mandei mensagem")
-            if request["type"] == Requests.CMD:
-                if request["target"] == self.id:
-                    self.perform_action(request["command"])
-            if request["type"] == Requests.LIST_ACTIONS:
-                if request["target"] == self.id:
-                    actions_list = self.list_actions()
-                    print(actions_list)
-                    msg = {
-                        "id": self.id, "req_type": Requests.LIST_ACTIONS, "content": actions_list}
-                    serialized_msg = json.dumps(msg)
-                    self.sender.sendall(serialized_msg.encode("utf-8"))
-            # except KeyError as e:
-            #     print(e.message)
-            # except Exception as err:
-            #     #print("Fui incapaz de mandar mensagem")
-            #     print(err)
-            #     break
+                if request["type"] == Requests.IDENTIFY:
+                    #print("Enviando identificação ao gateway")
+                    self.sender.sendall(serialized_info.encode("utf-8"))
+                    # print("Mandei mensagem")
+                if request["type"] == Requests.CMD:
+                    if request["target"] == self.id:
+                        info = self.perform_action(request["command"])
+                        msg = {
+                            "id": self.id, "req_type": Requests.CMD, "content": info}
+                        serialized_msg = json.dumps(msg)
+                        self.sender.sendall(serialized_msg.encode("utf-8"))
+
+                if request["type"] == Requests.LIST_ACTIONS:
+                    if request["target"] == self.id:
+                        actions_list = self.list_actions()
+                        msg = {
+                            "id": self.id, "req_type": Requests.LIST_ACTIONS, "content": actions_list}
+                        serialized_msg = json.dumps(msg)
+                        self.sender.sendall(serialized_msg.encode("utf-8"))
+            except Exception as err:
+                #print("Fui incapaz de mandar mensagem")
+                print(err)
+                break

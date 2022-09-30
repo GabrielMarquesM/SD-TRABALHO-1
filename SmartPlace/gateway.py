@@ -2,6 +2,7 @@ import json
 import socket
 import threading
 import time
+from collections import deque
 from enum import Enum
 
 ADDRESS = 'localhost'
@@ -12,30 +13,41 @@ DEVICE_PORT = 4321
 MULTICAST_TTL = 2
 DISCOVER_SLEEP_TIME = 5
 
+
 class Requests(str, Enum):
     IDENTIFY = "IDENTIFY"
     CMD = "CMD"
     LIST_ACTIONS = "LIST_ACTIONS"
 
+
 def connect_client():
     while True:
         try:
-            client_, address = sock_client.accept()
-            client_.send(devices_to_str().encode('utf-8'))
-            id = client_.recv(10240).decode('utf-8')
-            print("id :", id)
-            print(type(id))
+            client, address = sock_client.accept()
+            client.send(devices_to_str().encode('utf-8'))
+            id = client.recv(10240).decode('utf-8')
             # Cliente escolhe device
             if id in devices.keys():
-                device_commands = ""
                 msg = {"type": Requests.LIST_ACTIONS,
                        "command": "", "target": id}
                 send_cmd(msg)
-                client_.send(
-                    f"Dispositivo escolhido: {devices[id]}".encode('utf-8'))
+                # Espera pela lista de comandos do device escolhido
+                while not message_queue:
+                    pass
+                command_list = message_queue.popleft()
+                client.send(command_list.encode('utf-8'))
+                selected_cmd = client.recv(10240).decode('utf-8')
 
+                msg = {"type": Requests.CMD,
+                       "command": selected_cmd, "target": id}
+                send_cmd(msg)
+                # Espera pela info dos devices
+                # while not message_queue:
+                #     pass
+                # command_list = message_queue.popleft()
+                # print(command_list)
             else:
-                client_.send("Id Invalido".encode('utf-8'))
+                client.send("Id Invalido".encode('utf-8'))
 
         except Exception as err:
             print("Connection failed. (connect_client)")
@@ -44,21 +56,13 @@ def connect_client():
 
 def devices_to_str():
     msg = "Lista de dispositivos: \n"
+    i = 1
     for id in devices.keys():
         device = devices[id]
         msg += f"{id} - {device['type']}\n"
+        i += 1
     msg += "Digite o id do dispositivo desejado: "
     return msg
-
-
-def handle_command(client: socket):
-    while True:
-        try:
-            message = client.recv(10240).decode('utf-8')
-            print(message)
-            break
-        except:
-            break
 
 
 def init_multicast():
@@ -85,18 +89,6 @@ def send_cmd(msg: dict):
         print(err)
 
 
-def send_client(msg):
-    # sock_client.send("teste".encode('utf-8'))
-    serialized_msg = json.dumps(msg)
-    try:
-        print("Antes")
-        #client_.send(serialized_msg.encode('utf-8'))
-        print("Depois : ", serialized_msg)
-    except Exception as err:
-        print("Command failed. (send_client)")
-        print(err)
-
-
 def handle_device_msgs(sock_device: socket):
     while True:
         try:
@@ -109,11 +101,13 @@ def handle_device_msgs(sock_device: socket):
                     print(f"Dispositivo adicionado: {message['type']}")
 
             if message["req_type"] == Requests.CMD:
-                pass
+                message_queue.append(message["content"])
 
             if message["req_type"] == Requests.LIST_ACTIONS:
-                send_client(message)
-        except:
+                message_queue.append(message["content"])
+
+        except Exception as err:
+            print(err)
             break
 
 
@@ -154,12 +148,13 @@ sock_multcast = socket.socket(
     socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 sock_multcast.setsockopt(
     socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
+
 devices = {}
+message_queue = deque()
 
 sock_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock_client.bind((ADDRESS, CLIENT_PORT))
 sock_client.listen(1)
-#client_, address = sock_client.accept()
 
 initialize()
 

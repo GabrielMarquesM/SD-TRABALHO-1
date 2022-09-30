@@ -1,5 +1,4 @@
 import socket
-import threading
 
 HOST = 'localhost'
 PORT = 5678
@@ -17,6 +16,8 @@ def initialize_app():
         s.sendall(selected_device.encode('utf-8'))
         device_cmds = s.recv(10240).decode('utf-8')
         selected_cmd = input(device_cmds)
+        s.sendall(selected_cmd.encode('utf-8'))
+        #cmd_info = s.recv(10240).decode('utf-8')
         break
 
 

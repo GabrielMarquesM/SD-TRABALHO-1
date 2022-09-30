@@ -15,6 +15,8 @@ def initialize_app():
         device_list = s.recv(10240).decode('utf-8')
         selected_device = input(device_list)
         s.sendall(selected_device.encode('utf-8'))
+        device_cmds = s.recv(10240).decode('utf-8')
+        selected_cmd = input(device_cmds)
         break
 
 

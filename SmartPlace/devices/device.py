@@ -11,8 +11,9 @@ ADDRESS_TCP = ('localhost', 4321)
 
 
 class Requests(str, Enum):
-    IDENTIFY = "Identifique-se"
-    CMD = "Comando"
+    IDENTIFY = "IDENTIFY"
+    CMD = "CMD"
+    LIST_ACTIONS = "LIST_ACTIONS"
 
 
 class DeviceType(str, Enum):
@@ -64,12 +65,27 @@ class Device(ABC):
         self.sender.connect((ADDRESS_TCP[0], ADDRESS_TCP[1]))
 
         while True:
-            try:
-                request = self.listen.recv(10240).decode('utf-8')
-                if request == Requests.IDENTIFY:
-                    print("Enviando identificação ao gateway")
-                    self.sender.sendall(serialized_info.encode("utf-8"))
-                    # print("Mandei mensagem")
-            except:
-                print("Fui incapaz de mandar mensagem")
-                break
+            # try:
+            request = json.loads(self.listen.recv(10240).decode('utf-8'))
+
+            if request["type"] == Requests.IDENTIFY:
+                #print("Enviando identificação ao gateway")
+                self.sender.sendall(serialized_info.encode("utf-8"))
+                # print("Mandei mensagem")
+            if request["type"] == Requests.CMD:
+                if request["target"] == self.id:
+                    self.perform_action(request["command"])
+            if request["type"] == Requests.LIST_ACTIONS:
+                if request["target"] == self.id:
+                    actions_list = self.list_actions()
+                    print(actions_list)
+                    msg = {
+                        "id": self.id, "req_type": Requests.LIST_ACTIONS, "content": actions_list}
+                    serialized_msg = json.dumps(msg)
+                    self.sender.sendall(serialized_msg.encode("utf-8"))
+            # except KeyError as e:
+            #     print(e.message)
+            # except Exception as err:
+            #     #print("Fui incapaz de mandar mensagem")
+            #     print(err)
+            #     break

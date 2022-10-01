@@ -24,34 +24,51 @@ def connect_client():
     while True:
         try:
             client, address = sock_client.accept()
-            client.send(devices_to_str().encode('utf-8'))
-            id = client.recv(10240).decode('utf-8')
-            # Cliente escolhe device
-            if id in devices.keys():
-                msg = {"type": Requests.LIST_ACTIONS,
-                       "command": "", "target": id}
-                send_cmd(msg)
-                # Espera pela lista de comandos do device escolhido
-                while not message_queue:
-                    pass
-                command_list = message_queue.popleft()
-                client.send(command_list.encode('utf-8'))
-                selected_cmd = client.recv(10240).decode('utf-8')
 
-                msg = {"type": Requests.CMD,
-                       "command": selected_cmd, "target": id}
-                send_cmd(msg)
-                # Espera pela info dos devices
-                # while not message_queue:
-                #     pass
-                # command_list = message_queue.popleft()
-                # print(command_list)
-            else:
-                client.send("Id Invalido".encode('utf-8'))
+            client_thread = threading.Thread(
+                target=handle_client_msgs, args=[client])
+            client_thread.start()
 
         except Exception as err:
             print("Connection failed. (connect_client)")
             print(err)
+            # break
+
+
+def handle_client_msgs(client):
+
+    while True:
+        try:
+            time.sleep(0.3)
+            client.send(devices_to_str().encode('utf-8'))
+            id = client.recv(10240).decode('utf-8')
+            # Cliente escolhe device
+            if id in devices.keys():
+                msg_actions = {"type": Requests.LIST_ACTIONS,
+                               "command": "", "target": id}
+                send_cmd(msg_actions)
+                # Espera pela lista de comandos do device escolhido
+                command_list = get_message()
+                client.send(command_list.encode('utf-8'))
+                selected_cmd = client.recv(10240).decode('utf-8')
+
+                msg_cmd = {"type": Requests.CMD,
+                           "command": selected_cmd, "target": id}
+                send_cmd(msg_cmd)
+                # Espera pela confirmacao das alteracoes
+                cmd_info = get_message()
+                client.send(cmd_info.encode('utf-8'))
+
+            else:
+                client.send("Id Invalido".encode('utf-8'))
+        except:
+            break
+
+
+def get_message():
+    while not message_queue:
+        pass
+    return message_queue.popleft()
 
 
 def devices_to_str():

@@ -1,5 +1,7 @@
 from enum import Enum
+
 from devices.device import Device
+
 
 class Actions(str, Enum):
     CHANGE_CHANNEL = 1
@@ -7,9 +9,11 @@ class Actions(str, Enum):
     SWITCH_POWER = 3
     GET_INFO = 4
 
+
 class StatusPower(str, Enum):
     OFF = "OFF"
     ON = "ON"
+
 
 class Television(Device):
     def __init__(self, type) -> None:
@@ -18,7 +22,7 @@ class Television(Device):
         self.power: bool = True
         self.volume: int = 10
         # self.actions_map
-    
+
     def actions_to_string(self, enum: Actions):
         match enum:
             case Actions.CHANGE_CHANNEL:
@@ -29,7 +33,7 @@ class Television(Device):
                 return "Ligar/Desligar - (ON/OFF)"
             case Actions.GET_INFO:
                 return "Ver informações"
-    
+
     def change_channel(self, channel: int):
         self.channel = channel
 
@@ -41,7 +45,7 @@ class Television(Device):
             self.power = True
         if power == StatusPower.OFF:
             self.power = False
-    
+
     def get_info(self):
         info = "Info."
         return info
@@ -53,5 +57,5 @@ class Television(Device):
         msg += "Dispositivo Desejado - Comando: "
         return msg
 
-    def perform_action(self, command: str):
+    def select_action(self, command: str):
         pass

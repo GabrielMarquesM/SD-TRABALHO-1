@@ -44,8 +44,25 @@ class Device(ABC):
         pass
 
     @abstractmethod
-    def perform_action(self, command: str):
+    def select_action(self, command: str):
         pass
+
+    @abstractmethod
+    def actions_to_string(self, Actions: Enum):
+        pass
+
+    def get_action_by_id(self, id: str, Actions: Enum):
+        for action in Actions:
+            if action.value == int(id):
+                return action
+        print("Não achou o action")
+        return "0"
+
+    def is_valid_arg(self, arg: str, enum: Enum):
+        values = [x.value for x in enum]
+        if arg in values:
+            return True
+        return False
 
     def connect(self):
         # Listen
@@ -69,12 +86,10 @@ class Device(ABC):
                 request = json.loads(self.listen.recv(10240).decode('utf-8'))
 
                 if request["type"] == Requests.IDENTIFY:
-                    #print("Enviando identificação ao gateway")
                     self.sender.sendall(serialized_info.encode("utf-8"))
-                    # print("Mandei mensagem")
                 if request["type"] == Requests.CMD:
                     if request["target"] == self.id:
-                        info = self.perform_action(request["command"])
+                        info = self.select_action(request["command"])
                         msg = {
                             "id": self.id, "req_type": Requests.CMD, "content": info}
                         serialized_msg = json.dumps(msg)

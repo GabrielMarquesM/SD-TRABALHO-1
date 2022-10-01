@@ -1,7 +1,12 @@
+import os
 import socket
 
 HOST = 'localhost'
 PORT = 5678
+
+
+def clear_console():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 
 def initialize_app():
@@ -17,8 +22,10 @@ def initialize_app():
         device_cmds = s.recv(10240).decode('utf-8')
         selected_cmd = input(device_cmds)
         s.sendall(selected_cmd.encode('utf-8'))
-        #cmd_info = s.recv(10240).decode('utf-8')
-        break
+        cmd_result = s.recv(10240).decode('utf-8')
+        clear_console()
+        print(cmd_result)
+        # break
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

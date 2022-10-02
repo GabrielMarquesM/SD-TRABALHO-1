@@ -11,9 +11,8 @@ from devices.device import Device
 
 
 class Actions(IntEnum):
-    SHOW_TEMPERATURE = 1
-    CHANGE_SCALE = 2
-    GET_INFO = 3
+    CHANGE_SCALE = 1
+    GET_INFO = 2
 
 
 class Scale(str, Enum):
@@ -22,11 +21,11 @@ class Scale(str, Enum):
 
 
 class TempSensor(Device):
-    def __init__(self, type) -> None:
-        super().__init__(type)
+    def __init__(self, type, id) -> None:
+        super().__init__(type, id)
         self.scale: str = Scale.CELSIUS
         self.temperature: float = 20.0
-        self.actions_map: dict = {Actions.SHOW_TEMPERATURE: self.show_temperature, Actions.CHANGE_SCALE: self.change_scale,
+        self.actions_map: dict = {Actions.CHANGE_SCALE: self.change_scale,
                                   Actions.GET_INFO: self.get_info}
         self.temperature_checker = threading.Thread(
             target=self.calculate_temperature)
@@ -34,12 +33,10 @@ class TempSensor(Device):
 
     def actions_to_string(self, enum: Actions):
         match enum:
-            case Actions.SHOW_TEMPERATURE:
-                return "Mostrar temperatura em tempo real"
             case Actions.CHANGE_SCALE:
                 return "Mudar escala - (C | F)"
             case Actions.GET_INFO:
-                return "Ver informações"
+                return "Ver Temperatura"
 
     def calculate_temperature(self):
         while True:
@@ -49,9 +46,6 @@ class TempSensor(Device):
             self.temperature = round(value, 1)
             time.sleep(3)
 
-    def show_temperature(self):
-        return f"{self.temperature} - {self.scale}°"
-
     def change_scale(self, scale: Scale):
         if not self.is_valid_arg(scale, Scale):
             return "Escala invalida"
@@ -59,8 +53,7 @@ class TempSensor(Device):
         return f"Escala atualizada para {'Fahrenheit' if self.scale == Scale.FAHRENHEIT else 'Celsius'}"
 
     def get_info(self):
-        info = "Info."
-        return info
+        return f"{self.temperature} - {self.scale}°"
 
     def list_actions(self):
         msg = f"{self.type} - Lista de comandos\n"
@@ -79,10 +72,10 @@ class TempSensor(Device):
 
         action = self.get_action_by_id(cmd, Actions)
 
-        # No args
-        if action == Actions.SHOW_TEMPERATURE:
-            return self.show_temperature()
+        if not action:
+            return "Ação Inválida"
 
+        # No args
         if action == Actions.GET_INFO:
             return self.get_info()
 

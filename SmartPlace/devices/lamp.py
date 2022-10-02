@@ -27,8 +27,8 @@ class Intensity(str, Enum):
 
 
 class Lamp(Device):
-    def __init__(self, type) -> None:
-        super().__init__(type)
+    def __init__(self, type, id) -> None:
+        super().__init__(type, id)
         self.color: Color = Color.WHITE
         self.power: bool = True
         self.intensity: Intensity = Intensity.MEDIUM
@@ -47,12 +47,16 @@ class Lamp(Device):
                 return "Ver informações"
 
     def change_color(self, color: Color):
+        if self.power == False:
+            return "Dispositivo Desligado"
         if not self.is_valid_arg(color, Color):
             return "Cor invalida"
         self.color = color
         return f"Cor atualizada: {self.color}"
 
     def change_intensity(self, intensity: Intensity):
+        if self.power == False:
+            return "Dispositivo Desligado"
         if not self.is_valid_arg(intensity, Intensity):
             return "Intensidade Invalida"
         self.intensity = intensity
@@ -92,6 +96,9 @@ Informações do dispositivo\n
             args = cmd_args[1]
 
         action = self.get_action_by_id(cmd, Actions)
+
+        if not action:
+            return "Ação Inválida"
 
         # No args
         if action == Actions.SWITCH_POWER:

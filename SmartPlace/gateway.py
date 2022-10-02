@@ -5,6 +5,8 @@ import time
 from collections import deque
 from enum import Enum
 
+import message_pb2
+
 ADDRESS = 'localhost'
 MCAST_GRP = '225.0.0.250'
 MCAST_PORT = 5007
@@ -39,25 +41,43 @@ def handle_client_msgs(client):
 
     while True:
         try:
+            # Envia lista de devices
             time.sleep(0.3)
-            client.send(devices_to_str().encode('utf-8'))
-            id = client.recv(10240).decode('utf-8')
+            devices_list = get_devices_list(devices)
+            client.send(devices_list.SerializeToString())
+            # client.send(devices_to_str().encode('utf-8'))
+            # id = client.recv(10240).decode('utf-8')
+            id_request = client.recv(10240)
+            id_request_msg = message_pb2.Request()
+            id_request_msg.ParseFromString(id_request)
+            id = id_request_msg.request
+
+            print(f"{id_request_msg.address} : {id_request_msg.port}")
+
             # Cliente escolhe device
             if id in devices.keys():
                 msg_actions = {"type": Requests.LIST_ACTIONS,
                                "command": "", "target": id}
                 send_cmd(msg_actions)
                 # Espera pela lista de comandos do device escolhido
-                command_list = get_message()
-                client.send(command_list.encode('utf-8'))
-                selected_cmd = client.recv(10240).decode('utf-8')
+                command_list_msg = message_pb2.Response()
+                command_list_msg.response = get_message()
+
+                client.send(command_list_msg.SerializeToString())
+
+                selected_cmd = client.recv(10240)
+                selected_cmd_msg = message_pb2.Request()
+                selected_cmd_msg.ParseFromString(selected_cmd)
 
                 msg_cmd = {"type": Requests.CMD,
-                           "command": selected_cmd, "target": id}
+                           "command": selected_cmd_msg.request, "target": id}
                 send_cmd(msg_cmd)
                 # Espera pela confirmacao das alteracoes
-                cmd_info = get_message()
-                client.send(cmd_info.encode('utf-8'))
+                # cmd_info = get_message()
+
+                cmd_info_msg = message_pb2.Response()
+                cmd_info_msg.response = get_message()
+                client.send(cmd_info_msg.SerializeToString())
 
             else:
                 client.send("Id Invalido".encode('utf-8'))
@@ -71,15 +91,19 @@ def get_message():
     return message_queue.popleft()
 
 
-def devices_to_str():
-    msg = "Lista de dispositivos: \n"
-    i = 1
-    for id in devices.keys():
-        device = devices[id]
-        msg += f"{id} - {device['type']}\n"
-        i += 1
-    msg += "Digite o id do dispositivo desejado: "
-    return msg
+def get_devices_list(devices_dict: dict):
+    try:
+        # print(devices_dict)
+        device_list = message_pb2.DeviceList()
+
+        for id in devices_dict.keys():
+            device_msg = message_pb2.Device()
+            device_msg.type = devices_dict[id]["type"]
+            device_msg.id = id
+            device_list.devices.append(device_msg)
+        return device_list
+    except Exception as e:
+        print(e)
 
 
 def init_multicast():

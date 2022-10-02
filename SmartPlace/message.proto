@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+message Request {
+  optional string address = 1;
+  optional int32 port = 2;
+  optional string request = 3;
+}
+
+message Device {
+  optional string type = 1;
+  optional string id = 2;
+}
+
+message DeviceList {
+  repeated Device devices = 1;
+}
+
+message Response {
+  optional string response = 1;
+}

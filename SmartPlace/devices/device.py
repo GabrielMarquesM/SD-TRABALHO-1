@@ -24,8 +24,8 @@ class DeviceType(str, Enum):
 
 
 class Device(ABC):
-    def __init__(self, type) -> None:
-        self.id = str(uuid4())
+    def __init__(self, type, id) -> None:
+        self.id: str = id
         self.type: DeviceType = type
         self.listen = socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -52,11 +52,13 @@ class Device(ABC):
         pass
 
     def get_action_by_id(self, id: str, Actions: Enum):
+        if not id.isnumeric():
+            return False
         for action in Actions:
             if action.value == int(id):
                 return action
         print("Não achou o action")
-        return "0"
+        return False
 
     def is_valid_arg(self, arg: str, enum: Enum):
         values = [x.value for x in enum]

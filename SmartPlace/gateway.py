@@ -154,6 +154,8 @@ def handle_device_msgs(sock_device: socket):
 
 def connect_devices():
     sock_device = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock_device.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     sock_device.bind((ADDRESS, DEVICE_PORT))
     sock_device.listen(1)
 
@@ -189,11 +191,14 @@ sock_multcast = socket.socket(
     socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 sock_multcast.setsockopt(
     socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, MULTICAST_TTL)
+sock_multcast.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 devices = {}
 message_queue = deque()
 
 sock_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock_client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
 sock_client.bind((ADDRESS, CLIENT_PORT))
 sock_client.listen(1)
 

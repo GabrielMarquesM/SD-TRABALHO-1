@@ -76,10 +76,9 @@ def sendMessages(nickname: str):
 
         if message == Command.DISCONNECT:
             s.sendall(data_serialized.encode('utf-8'))
-            clear_console()
             s.close()
             break
-        
+
         s.sendall(data_serialized.encode('utf-8'))
 
 
@@ -87,7 +86,8 @@ HOST = "localhost"
 PORT = 6789
 
 while True:
-    print("Digite /ENTRAR para conectar-se")
+    clear_console()
+    print("Digite /ENTRAR para conectar-se ou digite 'q' para sair")
     message_ = input()
     if message_ == Command.JOIN:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
